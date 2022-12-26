@@ -1,52 +1,25 @@
 import { readFileSync } from 'fs';
 
-const data = readFileSync('./2.txt', 'utf8').trim();
+const data = readFileSync('./3.txt', 'utf8').trim();
 
 const rows = data.split(/\n/).map(row => row.trim());
 
-const rucksacks = rows.map(row => ([ row.slice(0, row.length / 2).split().map(prioritize), row.slice(row.length / 2).split().map(prioritize) ]));
+const rucksacks = rows.map(row => {
+  const chars = row.split('');
+  const left = chars.slice(0, row.length / 2).map(prioritize);
+  const right = chars.slice(row.length / 2).map(prioritize);
+  return [ left, right ];
+});
+
+console.log(rucksacks.reduce((a, rucksack) => a + rucksack[0].find(p1 => rucksack[1].find(p2 => p1 === p2)), 0));
 
 function prioritize(ch) {
-   
+  if ((ch >= 'a') && (ch <= 'z')) {
+    return ch.charCodeAt(0) - 'a'.charCodeAt(0) + 1;
+  } else {
+    return ch.charCodeAt(0) - 'A'.charCodeAt(0) + 27;
+  }
 }
-
-const names = new Map([
-  [ 'A', 'r' ],
-  [ 'B', 'p' ],
-  [ 'C', 's' ],
-  [ 'X', 0 ],
-  [ 'Y', 3 ],
-  [ 'Z', 6 ]
-]);
-
-const scores = new Map([
-  [ 'r', 1 ],
-  [ 'p', 2 ],
-  [ 's', 3 ]
-]);
-
-const matchups = [
-  [ 'r', 's', 0 ],
-  [ 'r', 'p', 6 ],
-  [ 'r', 'r', 3 ],
-  [ 'p', 'r', 0 ],
-  [ 'p', 's', 6 ],
-  [ 'p', 'p', 3 ],
-  [ 's', 'p', 0 ],
-  [ 's', 'r', 6 ],
-  [ 's', 's', 3 ]
-];
-
-const moves = rows.map(row => row.split(/ /).map(play => names.get(play)));
-console.log(moves);
-
-console.log(moves.reduce((a, move) => {
-  const choice = matchups.find(matchup => 
-    (matchup[0] === move[0]) &&
-    (matchup[2] === move[1])
-  );
-  return a + log(scores.get(choice[1])) + log(choice[2]);
-}, 0));
 
 function log(v) {
   console.log(v);
