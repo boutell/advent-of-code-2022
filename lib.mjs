@@ -8,11 +8,13 @@ export {
   fill,
   splitByN,
   set,
-  log
+  log,
+  serialize,
+  deserialize
 };
 
 function read(file) {
-  return log(readFileSync(file, 'utf8').trimRight().split(/\n/).map(row => row.trimRight()));
+  return readFileSync(file, 'utf8').trimRight().split(/\n/).map(row => row.trimRight());
 }
 
 // Do two ordered ranges overlap?
@@ -66,4 +68,12 @@ function splitByN(s, n) {
 function log(v) {
   console.log(JSON.stringify(v, null, '  '));
   return v;
+}
+
+function serialize(v) {
+  return JSON.stringify(v);
+}
+
+function deserialize(v) {
+  return JSON.parse(v);
 }
