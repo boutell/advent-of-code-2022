@@ -16,6 +16,7 @@ function startIndex(chars, recent, i) {
   if ((recent.length === messageLength) && (serialize(recent) === serialize([...new Set(recent)]))) {
     return i + 1;
   }
-  // Tail recursion
+  // Tail recursion isn't really safe in most JavaScript implementations.
+  // I get away with it here because the stack isn't deep enough for it to fail
   return startIndex(chars, recent, i + 1);
 }
