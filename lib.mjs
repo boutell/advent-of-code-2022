@@ -111,6 +111,6 @@ function deserialize(v) {
 }
 
 // Sort that returns a new array without modifying the original
-function sort(a) {
-  return [...a].sort();
+function sort(a, fn) {
+  return [...a].sort(fn);
 }

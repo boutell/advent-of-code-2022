@@ -1,4 +1,4 @@
-import { read, dict, allButLast, log } from './lib.mjs';
+import { read, sort, dict, allButLast, log } from './lib.mjs';
 
 const rows = read('./7.txt');
 
@@ -44,10 +44,14 @@ const folders = files.reduce((folders, file) => {
   }, [ folders, '/' ])[0];
 }, dict());
 
-log(folders.keys().reduce((a, name) => {
-  const size = folders.get(name);
-  return a + ((size <= 100000) ? size : 0);
-}, 0));
+const sortedFolderNames = sort(folders.keys(), (a, b) => folders.get(a) - folders.get(b));
+
+const used = folders.get('/');
+const free = 70000000 - used;
+const needed = 30000000 - free;
+
+const toDelete = sortedFolderNames.find(name => folders.get(name) >= needed);
+log({ toDelete, size: folders.get(toDelete) });
 
 function parent(dir) {
   dir = dir.replace(/\/[^\/]+$/, '');
