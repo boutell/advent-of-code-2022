@@ -10,7 +10,8 @@ export {
   set,
   log,
   serialize,
-  deserialize
+  deserialize,
+  sort
 };
 
 function read(file) {
@@ -76,4 +77,9 @@ function serialize(v) {
 
 function deserialize(v) {
   return JSON.parse(v);
+}
+
+// Sort that returns a new array without modifying the original
+function sort(a) {
+  return [...a].sort();
 }
