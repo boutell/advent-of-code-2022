@@ -11,7 +11,8 @@ export {
   log,
   serialize,
   deserialize,
-  sort
+  sort,
+  dict
 };
 
 function read(file) {
@@ -54,6 +55,36 @@ function fill(a, length, fill) {
 // Return a new array in which a[i] is set to v and the other values are unchanged
 function set(a, i, v) {
   return [...a.slice(0, i), v, ...a.slice(i + 1)];
+}
+
+// Returns an immutable dictionary (aka "Map") with `set` and `delete` methods that return
+// new dictionaries. The `data` argument is intended as an implementation detail for
+// `set` and `delete` to invoke
+
+function dict(data = {}) {
+  const self = {
+    data,
+    has(key) {
+      return Object.hasOwn(self.data, key);
+    },
+    set(key, value) {
+      return dict({ ...self.data, [key]: value });
+    },
+    delete(key) {
+      const {
+        [key]: discard,
+        ...newData
+      } = self.data;
+      return dict(newData);
+    },
+    get(key) {
+      return Object.hasOwn(self.data, key) ? self.data[key] : undefined;
+    },
+    keys() {
+      return Object.keys(self.data);
+    }
+  };
+  return self;
 }
 
 // Split a string s into substrings of length n

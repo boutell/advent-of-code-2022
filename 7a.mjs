@@ -1,4 +1,4 @@
-import { read, sort, allButLast, log } from './lib.mjs';
+import { read, sort, dict, allButLast, log } from './lib.mjs';
 
 const rows = read('./7.txt');
 
@@ -35,24 +35,16 @@ const [files, dir ] = rows.reduce(([ files, dir ], row) => {
 }, [ [], '/' ]);
 
 const folders = files.reduce((folders, file) => {
-  // Remove leading / and trailing filename
-  const levels = allButLast(file[0].substring(1).split('/'));
+  const levels = allButLast(file[0].split('/'));
   const size = file[1];
-  let dir = '/';
-  addToDir(dir);
-  folders.set(dir, (folders.get(dir) || 0) + size);
-  for (const level of levels) {
+  return levels.reduce(([ folders, dir ], level) => {
     dir = subpath(dir, level);
-    addToDir(dir);
-  }
-  return folders;
-  function addToDir(dir) {
-    folders.set(dir, (folders.get(dir) || 0) + size);
-  }
-}, new Map());
+    folders = folders.set(dir, (folders.get(dir) || 0) + size);
+    return [ folders, dir ];
+  }, [ folders, '/' ])[0];
+}, dict());
 
 const sortedFolderNames = sort(folders.keys(), (a, b) => folders.get(b) - folders.get(a));
-log(sortedFolderNames);
 log(sortedFolderNames.reduce((a, name) => {
   const size = folders.get(name);
   return a + ((size <= 100000) ? size : 0);
