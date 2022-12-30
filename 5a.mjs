@@ -1,4 +1,4 @@
-import { read, splitByN, set, fill, log } from './lib.mjs';
+import { read, splitByN, setIndex, fill, log } from './lib.mjs';
 
 const rows = read('./5.txt');
 
@@ -7,7 +7,7 @@ let [ stacks, moves ] = rows.reduce(([ stacks, moves ], row) => {
     stacks = fill(stacks, row.length / 4, () => []);
     return [ splitByN(row, 4).reduce((stacks, col, i) => {
       if (col.substring(0, 1) === '[') {
-        return set(stacks, i, [...(stacks[i] || []), col[1]]);
+        return setIndex(stacks, i, [...(stacks[i] || []), col[1]]);
       } else {
         return stacks;
       }
@@ -27,8 +27,8 @@ let [ stacks, moves ] = rows.reduce(([ stacks, moves ], row) => {
 stacks = moves.reduce((stacks, move) => {
   for (let i = 0; (i < move[0]); i++) {
     const moving = stacks[move[1]][0];
-    stacks = set(
-      set(
+    stacks = setIndex(
+      setIndex(
         stacks, move[1], stacks[
           move[1]
         ].slice(1)

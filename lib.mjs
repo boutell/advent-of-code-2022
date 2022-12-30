@@ -7,12 +7,13 @@ export {
   allButLast,
   fill,
   splitByN,
-  set,
+  setIndex,
   log,
   serialize,
   deserialize,
   sort,
-  dict
+  dict,
+  set
 };
 
 function read(file) {
@@ -53,7 +54,7 @@ function fill(a, length, fill) {
 }
 
 // Return a new array in which a[i] is set to v and the other values are unchanged
-function set(a, i, v) {
+function setIndex(a, i, v) {
   return [...a.slice(0, i), v, ...a.slice(i + 1)];
 }
 
@@ -86,6 +87,40 @@ function dict(data = {}) {
   };
   return self;
 }
+
+// Returns an immutable set with `add` and `delete` methods that return
+// new dictionaries. The `data` argument is intended as an implementation detail for
+// `add` and `delete` to invoke
+
+function set(data = {}) {
+  const self = {
+    data,
+    has(key) {
+      return Object.hasOwn(self.data, key);
+    },
+    add(key) {
+      return set({
+        ...self.data,
+        [key]: true
+      });
+    },
+    delete(key) {
+      const {
+        [key]: discard,
+        ...newData
+      } = self.data;
+      return set(newData);
+    },
+    keys() {
+      return Object.keys(self.data);
+    },
+    size() {
+      return self.keys().length;
+    }
+  };
+  return self;
+}
+
 
 // Split a string s into substrings of length n
 
