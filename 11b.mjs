@@ -1,6 +1,4 @@
-import Big from 'big.js';
-
-import { read, log, last, allButLast, setIndex, sort } from './lib.mjs';
+import { read, log, last, allButLast, setIndex, repeat, sort } from './lib.mjs';
 
 const items = 0;
 const operation = 1;
@@ -14,17 +12,17 @@ let monkeys = read('./11.txt').reduce((monkeys, row) => {
   let monkey;
   row = row.trim();
   if (row.startsWith('Monkey')) {
-    monkeys = [ ...monkeys, [ [], '', '', '', '', '', 0 ] ];
+    monkeys = [ ...monkeys, [ [], '', '', '', '', '', 0  ] ];
     return monkeys;
   }
   monkey = [...last(monkeys)];
   if (row.startsWith('Starting items:')) {
-    monkey[items] = row.substring('Starting items: '.length).split(', ').map(item => new Big(item));
+    monkey[items] = row.substring('Starting items: '.length).split(', ').map(item => parseInt(item));
   } else if (row.startsWith('Operation:')) {
     monkey[operation] = row.includes('*') ? '*' : '+';
     monkey[operand] = arg();
   } else if (row.startsWith('Test:')) {
-    monkey[divisibleBy] = new Big(arg());
+    monkey[divisibleBy] = parseInt(arg());
   } else if (row.startsWith('If true')) {
     monkey[ifTrue] = parseInt(arg());
   } else if (row.startsWith('If false')) {
@@ -40,21 +38,26 @@ let monkeys = read('./11.txt').reduce((monkeys, row) => {
   }
 }, []);
 
-for (let i = 0; (i < 1000); i++) {
-  console.log(i);
+monkeys = monkeys.map(monkey => setIndex(monkey, items, monkey[items].map(item => repeat(monkeys.length, () => item))));
+
+for (let i = 0; (i < 10000); i++) {
   // Can't "map" and use immutable monkeys at the same time because
   // the iterator could be confused by the replacement of monkeys
   for (let j = 0; (j < monkeys.length); j++) {
     const monkey = monkeys[j];
     monkeys = monkey[items].reduce((monkeys, item) => {
       if (monkey[operation] === '*') {
-        item = item.times(value(monkey[operand]));
+        item = item.map((m, k) => {
+          return (m * value(monkey[operand], k)) % monkeys[k][divisibleBy];
+        });
       } else if (monkey[operation] === '+') {
-        item = item.plus(value(monkey[operand]));
+        item = item.map((m, k) => {
+          return (m + value(monkey[operand], k)) % monkeys[k][divisibleBy];
+        });
       } else {
         throw new Error(`Unknown operation: ${operation}`);
       }
-      const other = item.mod(monkey[divisibleBy]).eq(new Big('0')) ? monkey[ifTrue] : monkey[ifFalse];
+      const other = (item[j] === 0) ? monkey[ifTrue] : monkey[ifFalse];
       monkeys = setIndex(monkeys, j, setIndex(
         monkey, inspections, monkeys[j][inspections] + 1
       ));
@@ -63,11 +66,11 @@ for (let i = 0; (i < 1000); i++) {
       )); 
       return monkeys;
 
-      function value(operand) {
+      function value(operand, monkeyIndex) {
         if (operand === 'old') {
-          return item;
+          return item[monkeyIndex];
         } else {
-          return new Big(operand);
+          return parseInt(operand);
         }
       }
     }, monkeys);
@@ -76,7 +79,6 @@ for (let i = 0; (i < 1000); i++) {
     ));
   }
 }
-log(monkeys);
 
 monkeys = sort(monkeys, (a, b) => b[inspections] - a[inspections]);
 
