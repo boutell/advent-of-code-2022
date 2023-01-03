@@ -1,4 +1,4 @@
-import { read, allButLast, last, log } from './lib.mjs';
+import { read, serialize, log, set } from './lib.mjs';
 
 const walls = read('./14.txt').map(row => row.split(' -> ').map(point => point.split(',').map(value => parseInt(value))));
 let taken = walls.reduce((taken, wall) => 
@@ -13,6 +13,18 @@ let taken = walls.reduce((taken, wall) =>
   ).taken,
   []
 ); 
+
+// Scanning "taken" was too slow. Replacing that with my immutable sets was still
+// very slow because they aren't powered by cleverly balanced trees like immutablejs.
+// And "memoize" isn't useful here because the answers actually do change.
+//
+// So I punted on the immutability and used regular sets and "serialize", which is still
+// a kinda-interesting alternative to building my own sparse grids.
+
+const filled = new Set();
+for (const p of taken) {
+  filled.add(serialize(p));
+}
 
 const floor = Math.max(...taken.map(p => p[1])) + 2;
 
@@ -31,12 +43,14 @@ while(!occupied(500, 0)) {
       x++;
       y++;
     } else {
-      taken = [ ...taken, [ x, y ] ];
-      console.log(`${x}, ${y}`);
+      filled.add(serialize([ x, y ]));
       break;
     }
   }
   count++;
+  if (!(count % 1000)) {
+    console.log(count);
+  }
 }
 
 console.log(count);
@@ -62,5 +76,5 @@ function line(p1, p2) {
 }
 
 function occupied(x, y) {
-  return (y === floor) || taken.some(p => (p[0] === x) && (p[1] === y)); 
+  return (y === floor) || filled.has(serialize([ x, y ]));
 }
