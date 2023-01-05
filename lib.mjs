@@ -164,14 +164,14 @@ function sort(a, fn) {
 // Return a version of the function that caches previous results
 // for the same set of arguments
 function memoize(fn) {
-  const cache = dict();
+  let cache = dict();
   return (...args) => {
     const key = serialize(args);
     if (cache.has(key)) {
       return cache.get(key);
     }
     const value = fn(...args);
-    cache.set(key, value);
+    cache = cache.set(key, value);
     return value;
   };
 }
