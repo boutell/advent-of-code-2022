@@ -12,10 +12,13 @@ let valves = read('./16.txt').map(row => {
 
 valves = valves.map((valve, i) => ({ ...valve, index: i, tunnels: valve.tunnels.map(tunnel => valves.findIndex(({ name }) => name === tunnel)) }));
 
-log(optimize({ valves, moves: [], open: set(), location: 0, time: 0, value: 0, depth: 0 }));
+const result = optimize({ valves, moves: [], open: set(), location: valves.findIndex(({ name }) => name === 'AA'), time: 0, value: 0, depth: 0 });
+log({
+  moves: result.moves,
+  value: result.value
+});
 
 function optimize(world) {
-  console.log(world.depth, world.time);
   if (world.time === 30) {
     return world;
   }
@@ -23,7 +26,6 @@ function optimize(world) {
   let best, bestValue = -1;
   for (const move of legal) {
     const mWorld = applyMove(world, move);
-    console.log(`> ${mWorld.time}`);
     const oWorld = optimize({...mWorld, depth: mWorld.depth + 1 });
     if (oWorld.value > bestValue) {
       best = oWorld;
@@ -35,11 +37,10 @@ function optimize(world) {
 
 function applyMove(world, move) {
   if (move.type === 'path') {
-    for (const location of move.path) {
+    move.path.forEach((location, i) => {
       world = tick(world);
-      console.log(`-- ${world.time}`);
       world = { ...world, location };
-    }
+    });
   } else if (move.type === 'open') {
     world = tick(world);
     world = { ...world, open: world.open.add(world.location) };
@@ -54,54 +55,38 @@ function applyMove(world, move) {
 }
 
 function tick(world) {
-  console.log('ticking');
-  const nWorld = {...world };
-  nWorld.value = nWorld.valves.reduce((sum, valve) => sum + (world.open.has(valve.index) ? valve.rate : 0), world.value);
-  nWorld.time++;
-  return nWorld;
+  return {
+    ...world,
+    value: world.open.keys().reduce((sum, index) => sum + valves[index].rate, world.value),
+    time: world.time + 1
+  };
 }
 
 function legalMoves(world) {
   const here = world.valves[world.location];
   const moves = [];
-  console.log(here);
   if ((here.rate > 0) && !world.open.has(here.index)) {
     moves.push({
       type: 'open'
     });
+  } else {
+    world.valves.filter(valve => (world.location !== valve.index) && (valve.rate > 0) && !world.open.has(valve.index)).forEach((valve) => {
+      const path = shortestPath(world.valves, world.location, valve.index);
+      if (world.time + path.length > 30) {
+        return;
+      }
+      if (path) {
+        moves.push({
+          type: 'path',
+          path
+        });
+      }
+    });
   }
-  world.valves.filter(valve => (world.location !== valve.index) && (valve.rate > 0) && !world.open.has(valve.index)).forEach((valve, i) => {
-    console.log(`${world.location} ${valve.index}`);
-    const path = shortestPath(world.valves, world.location, i);
-    if (path) {
-      moves.push({
-        type: 'path',
-        path
-      });
-    }
-  });
   if (!moves.length) {
     moves.push({ type: 'pass' });
   }
   return moves;
-}
-
-function loops(moves, index) {
-  let i = moves.length;
-  while (true) { 
-    i--;
-    if (i < 0) {
-      // If we got back to the start point without opening a valve, that's a loop too
-      return index === 0;
-    }
-    if (moves[i].type === 'open') {
-      return false;
-    }
-    if ((moves[i].type === 'location') && (moves[i].location === index)) {
-      return true;
-    }    
-  }
-  return false;
 }
 
 function shortestPathBody(valves, a, b, taken = []) {
