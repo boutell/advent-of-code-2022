@@ -1,4 +1,7 @@
-import { read, sort, log, last, set, memoize, serialize } from './lib.mjs';
+import { read, sort, log, last, set, memoize, repeat, setIndex, serialize } from './lib.mjs';
+
+const timeLimit = 26;
+const actors = 2;
 
 const shortestPath = memoize(shortestPathBody);
 
@@ -12,21 +15,24 @@ let valves = read('./16.txt').map(row => {
 
 valves = valves.map((valve, i) => ({ ...valve, index: i, tunnels: valve.tunnels.map(tunnel => valves.findIndex(({ name }) => name === tunnel)) }));
 
-const result = optimize({ valves, moves: [], open: set(), location: valves.findIndex(({ name }) => name === 'AA'), time: 0, value: 0, depth: 0 });
+const start = valves.findIndex(({ name }) => name === 'AA');
+const result = optimize({ valves, moves: repeat(actors, () => []), open: set(), locations: repeat(actors, () => start), time: 0, value: 0, paths: repeat(actors, () => null) }, 0);
 log({
   moves: result.moves,
   value: result.value
 });
 
-function optimize(world) {
-  if (world.time === 30) {
+function optimize(world, a, depth = 0) {
+  if (world.time === timeLimit) {
     return world;
   }
-  const legal = legalMoves(world);
+  const bestWorlds = [];
   let best, bestValue = -1;
+  const legal = legalMoves(world, a);
+  let mWorld;
   for (const move of legal) {
-    const mWorld = applyMove(world, move);
-    const oWorld = optimize({...mWorld, depth: mWorld.depth + 1 });
+    mWorld = applyMove(world, a, move);
+    let oWorld = optimize(mWorld, (a + 1) % actors, depth + 1);
     if (oWorld.value > bestValue) {
       best = oWorld;
       bestValue = oWorld.value;
@@ -35,50 +41,27 @@ function optimize(world) {
   return best || world;
 }
 
-function applyMove(world, move) {
-   
-  if (move.type === 'path') {
-    const location = move.path[0];
-    world = tick(world);
-    const path = move.path.slice(1);
-    world = { ...world, location, path: (path.length && path) || null };
-  } else if (move.type === 'open') {
-    world = tick(world);
-    world = { ...world, open: world.open.add(world.location) };
-  } else if (move.type === 'pass') {
-    // Do nothing, let time pass
-    world = tick(world);
-  } else {
-    throw new Error(`Unknown move type: ${move.type}`);
-  }
-  world = { ...world, moves: [ ...world.moves, move ] };
-  return world;
-}
-
-function tick(world) {
-  return {
-    ...world,
-    value: world.open.keys().reduce((sum, index) => sum + valves[index].rate, world.value),
-    time: world.time + 1
-  };
-}
-
-function legalMoves(world) {
-  const here = world.valves[world.location];
+function legalMoves(world, a) {
+  const here = world.valves[world.locations[a]];
   const moves = [];
-  if (world.path) {
+  if (world.paths[a]) {
     moves.push({
       type: 'path',
-      path: world.path
+      path: world.paths[a]
     });
   } else if ((here.rate > 0) && !world.open.has(here.index)) {
     moves.push({
       type: 'open'
     });
   } else {
-    world.valves.filter(valve => (world.location !== valve.index) && (valve.rate > 0) && !world.open.has(valve.index)).forEach((valve) => {
-      const path = shortestPath(world.valves, world.location, valve.index);
-      if (world.time + path.length > 30) {
+    // Consider valves that:
+    // * Are not our current location
+    // * Actuallly do release pressure
+    // * Are not already open
+    // * Are not the current destination of any actor
+    world.valves.filter(valve => (world.locations[a] !== valve.index) && (valve.rate > 0) && !world.open.has(valve.index) && !world.paths.find(path => path && last(path) === valve.index)).forEach((valve) => {
+      const path = shortestPath(world.valves, world.locations[a], valve.index);
+      if (world.time + path.length > timeLimit) {
         return;
       }
       if (path) {
@@ -93,6 +76,34 @@ function legalMoves(world) {
     moves.push({ type: 'pass' });
   }
   return moves;
+}
+
+
+function applyMove(world, a, move) {
+  if (a === 0) {
+    world = tick(world);
+  }
+  if (move.type === 'path') {
+    const location = move.path[0];
+    const path = move.path.slice(1);
+    world = { ...world, locations: setIndex(world.locations, a, location), paths: setIndex(world.paths, a, (path.length && path) || null) };
+  } else if (move.type === 'open') {
+    world = { ...world, open: world.open.add(world.locations[a]) };
+  } else if (move.type === 'pass') {
+    // Do nothing, let time pass
+  } else {
+    throw new Error(`Unknown move type: ${move.type}`);
+  }
+  world = { ...world, moves: setIndex(world.moves, a, [ ...world.moves[a], move ]) };
+  return world;
+}
+
+function tick(world) {
+  return {
+    ...world,
+    value: world.open.keys().reduce((sum, index) => sum + valves[index].rate, world.value),
+    time: world.time + 1
+  };
 }
 
 function shortestPathBody(valves, a, b, taken = []) {
