@@ -15,7 +15,8 @@ export {
   sort,
   dict,
   set,
-  repeat
+  repeat,
+  iterate
 };
 
 function read(file) {
@@ -159,6 +160,16 @@ function deserialize(v) {
 // Sort that returns a new array without modifying the original
 function sort(a, fn) {
   return [...a].sort(fn);
+}
+
+// Return an array containing the integers 0 through n-1
+
+function iterate(n) {
+  const a = [];
+  for (let i = 0; (i < n); i++) {
+    a.push(i);
+  }
+  return a;
 }
 
 // Return a version of the function that caches previous results

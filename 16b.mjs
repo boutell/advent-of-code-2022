@@ -1,4 +1,4 @@
-import { read, sort, log, last, set, memoize, repeat, setIndex, serialize } from './lib.mjs';
+import { read, sort, log, last, set, memoize, repeat, setIndex, serialize, iterate } from './lib.mjs';
 
 const timeLimit = 26;
 const actors = 2;
@@ -56,10 +56,23 @@ function legalMoves(world, a) {
   } else {
     // Consider valves that:
     // * Are not our current location
-    // * Actuallly do release pressure
+    // * Actually do release pressure
     // * Are not already open
     // * Are not the current destination of any actor
-    world.valves.filter(valve => (world.locations[a] !== valve.index) && (valve.rate > 0) && !world.open.has(valve.index) && !world.paths.find(path => path && last(path) === valve.index)).forEach((valve) => {
+    // * Are not easier for other actors to get to after completing their current work
+    world.valves.filter(valve =>
+      (world.locations[a] !== valve.index) &&
+      (valve.rate > 0) &&
+      !world.open.has(valve.index) &&
+      !world.paths.find(path => path && last(path) === valve.index) &&
+      !iterate(actors).some(
+        a2 => (a2 !== a) &&
+        (
+          shortestPath(world.valves, world.locations[a2], valve.index).length +
+          (world.paths[a2] ? (world.paths[a2].length + 1) : 0)
+        ) < shortestPath(world.valves, world.locations[a], valve.index)
+      )
+    ).forEach((valve) => {
       const path = shortestPath(world.valves, world.locations[a], valve.index);
       if (world.time + path.length > timeLimit) {
         return;
