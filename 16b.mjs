@@ -1,4 +1,4 @@
-import { read, sort, log, last, set, memoize, repeat, setIndex, serialize, iterate } from './lib.mjs';
+import { read, sort, log, last, dict, memoize, repeat, setIndex, serialize, iterate } from './lib.mjs';
 
 const timeLimit = 26;
 const actors = 2;
@@ -16,7 +16,9 @@ let valves = read('./16.txt').map(row => {
 valves = valves.map((valve, i) => ({ ...valve, index: i, tunnels: valve.tunnels.map(tunnel => valves.findIndex(({ name }) => name === tunnel)) }));
 
 const start = valves.findIndex(({ name }) => name === 'AA');
-const result = optimize({ valves, moves: repeat(actors, () => []), open: set(), locations: repeat(actors, () => start), time: 0, value: 0, paths: repeat(actors, () => null) }, 0);
+// An immutable dict just makes the whole thing run slower
+const optimizeCache = new Map();
+const result = optimize({ valves, moves: repeat(actors, () => []), open: dict(), locations: repeat(actors, () => start), time: 0, value: 0, paths: repeat(actors, () => null) }, 0);
 log({
   moves: result.moves,
   value: result.value
@@ -25,6 +27,13 @@ log({
 function optimize(world, a, depth = 0) {
   if (world.time === timeLimit) {
     return world;
+  }
+  const order = sort(iterate(actors), (a, b) => world.locations[a] - world.locations[b]);
+  // A solution for a given time, set of open valves, and set of current paths and locations can be reused,
+  // even if the actors involved happen to be different
+  const key = `${world.time},${world.open.keys().map(key => `${key}:${world.open.get(key)}`).join(',')},${JSON.stringify({paths: order.map(a => world.paths[a] && last(world.paths[a])), locations: order.map(a => world.locations[a])})}`;
+  if (optimizeCache.has(key)) {
+    return optimizeCache.get(key);
   }
   const bestWorlds = [];
   let best, bestValue = -1;
@@ -38,7 +47,9 @@ function optimize(world, a, depth = 0) {
       bestValue = oWorld.value;
     }
   }
-  return best || world;
+  best = best || world;
+  optimizeCache.set(key, best.value);
+  return best;
 }
 
 function legalMoves(world, a) {
@@ -70,7 +81,7 @@ function legalMoves(world, a) {
         (
           shortestPath(world.valves, world.locations[a2], valve.index).length +
           (world.paths[a2] ? (world.paths[a2].length + 1) : 0)
-        ) < shortestPath(world.valves, world.locations[a], valve.index)
+        ) < shortestPath(world.valves, world.locations[a], valve.index).length
       )
     ).forEach((valve) => {
       const path = shortestPath(world.valves, world.locations[a], valve.index);
@@ -101,7 +112,7 @@ function applyMove(world, a, move) {
     const path = move.path.slice(1);
     world = { ...world, locations: setIndex(world.locations, a, location), paths: setIndex(world.paths, a, (path.length && path) || null) };
   } else if (move.type === 'open') {
-    world = { ...world, open: world.open.add(world.locations[a]) };
+    world = { ...world, open: world.open.set(world.locations[a], world.time) };
   } else if (move.type === 'pass') {
     // Do nothing, let time pass
   } else {
