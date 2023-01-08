@@ -3,6 +3,7 @@ import { read, sort, log, last, dict, memoize, repeat, setIndex, serialize, iter
 const timeLimit = 26;
 const actors = 2;
 
+const actorList = iterate(actors);
 const shortestPath = memoize(shortestPathBody);
 
 let valves = read('./16.txt').map(row => {
@@ -64,12 +65,13 @@ function legalMoves(world, a) {
     // * Are not already open
     // * Are not the current destination of any actor
     // * Are not easier for other actors to get to after completing their current work
+
     world.valves.filter(valve =>
       (world.locations[a] !== valve.index) &&
       (valve.rate > 0) &&
       !world.open.has(valve.index) &&
       !world.paths.find(path => path && last(path) === valve.index) &&
-      !iterate(actors).some(
+      !actorList.some(
         a2 => (a2 !== a) &&
         (
           shortestPath(world.valves, world.locations[a2], valve.index).length +
