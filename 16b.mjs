@@ -19,7 +19,7 @@ const shortestPaths = getShortestPaths();
 
 const start = valves.findIndex(({ name }) => name === 'AA');
 
-const result = optimize({ valves, moves: repeat(actors, () => []), open: dict(), locations: repeat(actors, () => start), time: 0, value: 0, paths: repeat(actors, () => null) }, 0);
+const result = optimize({ valves, moves: repeat(actors, () => []), open: [], locations: repeat(actors, () => start), time: 0, value: 0, paths: repeat(actors, () => null) }, 0);
 log({
   moves: result.moves,
   value: result.value
@@ -55,7 +55,7 @@ function legalMoves(world, a) {
       type: 'path',
       path: world.paths[a]
     });
-  } else if ((here.rate > 0) && !world.open.has(here.index)) {
+  } else if ((here.rate > 0) && !world.open.includes(here.index)) {
     moves.push({
       type: 'open'
     });
@@ -70,7 +70,7 @@ function legalMoves(world, a) {
     world.valves.filter(valve =>
       (world.locations[a] !== valve.index) &&
       (valve.rate > 0) &&
-      !world.open.has(valve.index) &&
+      !world.open.includes(valve.index) &&
       !world.paths.find(path => path && last(path) === valve.index) &&
       !actorList.some(
         a2 => (a2 !== a) &&
@@ -108,7 +108,7 @@ function applyMove(world, a, move) {
     const path = move.path.slice(1);
     world = { ...world, locations: setIndex(world.locations, a, location), paths: setIndex(world.paths, a, (path.length && path) || null) };
   } else if (move.type === 'open') {
-    world = { ...world, open: world.open.set(world.locations[a], world.time) };
+    world = { ...world, open: [...world.open, world.locations[a]] };
   } else if (move.type === 'pass') {
     // Do nothing, let time pass
   } else {
@@ -120,7 +120,7 @@ function applyMove(world, a, move) {
 function tick(world) {
   return {
     ...world,
-    value: world.open.keys().reduce((sum, index) => sum + valves[index].rate, world.value),
+    value: world.open.reduce((sum, index) => sum + valves[index].rate, world.value),
     time: world.time + 1
   };
 }
