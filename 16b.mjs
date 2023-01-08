@@ -26,6 +26,9 @@ log({
 });
 
 function optimize(world, a) {
+  if (world.time === 1) {
+    console.log('*');
+  }
   if (world.time === timeLimit) {
     return world;
   }
@@ -118,9 +121,13 @@ function applyMove(world, a, move) {
 }
 
 function tick(world) {
+  let value = world.value;
+  for (const location of world.open) {
+    value += valves[location].rate;
+  }
   return {
     ...world,
-    value: world.open.reduce((sum, index) => sum + valves[index].rate, world.value),
+    value,
     time: world.time + 1
   };
 }
