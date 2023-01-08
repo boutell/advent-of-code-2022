@@ -16,39 +16,33 @@ let valves = read('./16.txt').map(row => {
 valves = valves.map((valve, i) => ({ ...valve, index: i, tunnels: valve.tunnels.map(tunnel => valves.findIndex(({ name }) => name === tunnel)) }));
 
 const start = valves.findIndex(({ name }) => name === 'AA');
-// An immutable dict just makes the whole thing run slower
-const optimizeCache = new Map();
+
 const result = optimize({ valves, moves: repeat(actors, () => []), open: dict(), locations: repeat(actors, () => start), time: 0, value: 0, paths: repeat(actors, () => null) }, 0);
 log({
   moves: result.moves,
   value: result.value
 });
 
-function optimize(world, a, depth = 0) {
+function optimize(world, a) {
   if (world.time === timeLimit) {
     return world;
   }
-  const order = sort(iterate(actors), (a, b) => world.locations[a] - world.locations[b]);
-  // A solution for a given time, set of open valves, and set of current paths and locations can be reused,
+  const order = sort(iterate(actors), (a, b) => serialize(world.paths[a]).localeCompare(serialize(world.paths[b])));
+  // A solution for a given time, set of open valves, and set of current paths can be reused,
   // even if the actors involved happen to be different
-  const key = `${world.time},${world.open.keys().map(key => `${key}:${world.open.get(key)}`).join(',')},${JSON.stringify({paths: order.map(a => world.paths[a] && last(world.paths[a])), locations: order.map(a => world.locations[a])})}`;
-  if (optimizeCache.has(key)) {
-    return optimizeCache.get(key);
-  }
+  //log(world.moves);
   const bestWorlds = [];
   let best, bestValue = -1;
   const legal = legalMoves(world, a);
-  let mWorld;
   for (const move of legal) {
-    mWorld = applyMove(world, a, move);
-    let oWorld = optimize(mWorld, (a + 1) % actors, depth + 1);
+    const mWorld = applyMove(world, a, move);
+    let oWorld = optimize(mWorld, (a + 1) % actors);
     if (oWorld.value > bestValue) {
       best = oWorld;
       bestValue = oWorld.value;
     }
   }
   best = best || world;
-  optimizeCache.set(key, best.value);
   return best;
 }
 
