@@ -114,7 +114,6 @@ function applyMove(world, a, move) {
   } else {
     throw new Error(`Unknown move type: ${move.type}`);
   }
-  world = { ...world, moves: setIndex(world.moves, a, [ ...world.moves[a], move ]) };
   return world;
 }
 
