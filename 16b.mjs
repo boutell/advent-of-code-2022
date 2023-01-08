@@ -27,7 +27,6 @@ function optimize(world, a) {
   if (world.time === timeLimit) {
     return world;
   }
-  const order = sort(iterate(actors), (a, b) => serialize(world.paths[a]).localeCompare(serialize(world.paths[b])));
   // A solution for a given time, set of open valves, and set of current paths can be reused,
   // even if the actors involved happen to be different
   //log(world.moves);
