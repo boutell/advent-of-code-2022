@@ -4,7 +4,6 @@ const timeLimit = 26;
 const actors = 2;
 
 const actorList = iterate(actors);
-const shortestPath = memoize(shortestPathBody);
 
 let valves = read('./16.txt').map(row => {
   const matches = row.match(/Valve (\w\w) has flow rate=(\d+); tunnels? leads? to valves? (.*)$/);
@@ -15,6 +14,8 @@ let valves = read('./16.txt').map(row => {
 });
 
 valves = valves.map((valve, i) => ({ ...valve, index: i, tunnels: valve.tunnels.map(tunnel => valves.findIndex(({ name }) => name === tunnel)) }));
+
+const shortestPaths = getShortestPaths();
 
 const start = valves.findIndex(({ name }) => name === 'AA');
 
@@ -74,12 +75,12 @@ function legalMoves(world, a) {
       !actorList.some(
         a2 => (a2 !== a) &&
         (
-          shortestPath(world.valves, world.locations[a2], valve.index).length +
+          shortestPaths[world.locations[a2]][valve.index].length +
           (world.paths[a2] ? (world.paths[a2].length + 1) : 0)
-        ) < shortestPath(world.valves, world.locations[a], valve.index).length
+        ) < shortestPaths[world.locations[a]][valve.index].length
       )
     ).forEach((valve) => {
-      const path = shortestPath(world.valves, world.locations[a], valve.index);
+      const path = shortestPaths[world.locations[a]][valve.index];
       if (world.time + path.length > timeLimit) {
         return;
       }
@@ -125,7 +126,7 @@ function tick(world) {
   };
 }
 
-function shortestPathBody(valves, a, b, taken = []) {
+function shortestPath(valves, a, b, taken = []) {
   if (a === b) {
     return [];
   }
@@ -136,7 +137,7 @@ function shortestPathBody(valves, a, b, taken = []) {
     if (taken.includes(index)) {
       return path;
     }
-    const subPath = shortestPathBody(valves, index, b, [...taken, index]);
+    const subPath = shortestPath(valves, index, b, [...taken, index]);
     if (subPath) {
       const newPath = [ index, ...subPath ];
       if (!path || (newPath.length < path.length)) {
@@ -145,4 +146,15 @@ function shortestPathBody(valves, a, b, taken = []) {
     }
     return path;
   }, false);
+}
+
+function getShortestPaths() {
+  const shortestPaths = [];
+  for (let v1 = 0; (v1 < valves.length); v1++) {
+    shortestPaths[v1] = [];
+    for (let v2 = 0; (v2 < valves.length); v2++) {
+      shortestPaths[v1][v2] = shortestPath(valves, v1, v2);
+    }
+  }
+  return shortestPaths;
 }
