@@ -9,6 +9,9 @@ export {
   splitByN,
   setIndex,
   log,
+  print,
+  verboseLog,
+  verbosePrint,
   serialize,
   deserialize,
   memoize,
@@ -16,7 +19,8 @@ export {
   dict,
   set,
   repeat,
-  iterate
+  iterate,
+  clone
 };
 
 function read(file) {
@@ -147,6 +151,27 @@ function splitByN(s, n) {
   return cols;
 }
 
+function verbosePrint(v) {
+  if (process.argv.includes('-v')) {
+    return print(v);
+  } else {
+    return v;
+  }
+}
+
+function verboseLog(v) {
+  if (process.argv.includes('-v')) {
+    return log(v);
+  } else {
+    return v;
+  }
+}
+
+function print(v) {
+  console.log(v);
+  return v;
+}
+
 function log(v) {
   console.log(JSON.stringify(v, null, '  '));
   return v;
@@ -190,3 +215,7 @@ function memoize(fn) {
   };
 }
 
+// Clone a basic data object/array/other JSON friendly thing
+function clone(d) {
+  return JSON.parse(JSON.stringify(d));
+}
