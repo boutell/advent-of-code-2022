@@ -24,38 +24,38 @@ const pieces = [
    ##`
 ].map(piece => piece.split('\n').map(s => s.trim().split('')));
 
-const { grid } = iterate(2022).reduce(({ grid, j }, i) => {
+const { grid } = iterate(2022).reduce(({ grid, j, offset }, i) => {
   verbosePrint(`Piece ${i + 1}:\n\n`);
   const piece = pieces[i % pieces.length];
   let y = grid.length + 3 + piece.length - 1;
-  verbosePrint(`${grid.length} 3 ${piece.length} ${y}`);
+  // verbosePrint(`${grid.length} 3 ${piece.length} ${y}`);
   let x = 2;
   let steps = 0;
-  verbosePrint(render(placePiece(grid, piece, x, y)));
-  print(i);
+  // verbosePrint(render(placePiece(grid, piece, x, y)));
+  // print(i);
   while (true) {
     steps++;
-    verbosePrint(`step: ${steps} x is ${x} ${y}`);
+    // verbosePrint(`step: ${steps} x is ${x} ${y}`);
     const nx = x + ((jets[j % jets.length] === '<') ? -1 : 1);
     j++;
     if (!((nx < 0) || (nx + piece[0].length > columns) || intersects(grid, piece, nx, y))) {
       x = nx;
-      verbosePrint(`shifting to ${x}`);
+      // verbosePrint(`shifting to ${x}`);
     }
-    verbosePrint(`at ${x} ${y}:`);
-    verbosePrint(render(placePiece(grid, piece, x, y)));
+    // verbosePrint(`at ${x} ${y}:`);
+    // verbosePrint(render(placePiece(grid, piece, x, y)));
     // Note that positive y values go up, not down, because we are thinking in
     // terms of an ever-growing tower. So to fall down we decrement y
     let ny = y - 1;
     if (intersects(grid, piece, x, ny)) {
-      verbosePrint(`placing at ${x} ${y}`);
-      return { grid: placePiece(grid, piece, x, y), j };
+      // verbosePrint(`placing at ${x} ${y}`);
+      return { ...simplify({ grid: placePiece(grid, piece, x, y), offset }), j };
     }
     y = ny;
-    verbosePrint(`moving down to ${y}`);
+    // verbosePrint(`moving down to ${y}`);
     // verbosePrint(render(placePiece(grid, piece, x, y)));
   }
-}, { grid: [], j: 0 });
+}, { grid: [], j: 0, offset: 0 });
 
 print(render(grid));
 console.log(grid.length);
@@ -115,4 +115,26 @@ function set(grid, x, y) {
     grid.push([]);
   }
   grid[y][x] = '#';
+}
+
+function simplify({ grid, offset }) {
+  changed = false;
+  do {
+    for (let y = 0; (y < grid.length); y++) {
+      if (get(0, y) === '#') {
+        const bottom = walk(0, y);
+        if (bottom !== false) {
+          offset += bottom;
+          grid = grid.slice(bottom);
+          changed = true;
+          break;
+        }
+      }
+    }
+  } while (changed);
+  return { grid, offset };
+}
+
+function walk(x, y) {
+  
 }
