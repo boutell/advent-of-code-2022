@@ -29,7 +29,10 @@ const pieces = [
 const grid = [];
 let j = 0;
 
-for (let i = 0; (i < 2022); i++) {
+for (let i = 0; (i < 1000000); i++) {
+  if (!(i % 1000)) {
+    console.log(i);
+  }
   // verbosePrint(`Piece ${i + 1}:\n\n`);
   const piece = pieces[i % pieces.length];
   let y = grid.length + 3 + piece.length - 1;
