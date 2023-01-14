@@ -1,3 +1,5 @@
+// Sadly the grid is now mutable, need the ridiculous speed increase
+
 import { read, log, print, verbosePrint, setIndex, iterate, clone } from './lib.mjs';
 
 const jets = read('./17.txt')[0].split('');
@@ -24,8 +26,11 @@ const pieces = [
    ##`
 ].map(piece => piece.split('\n').map(s => s.trim().split('')));
 
-const { grid } = iterate(2022).reduce(({ grid, j, offset }, i) => {
-  verbosePrint(`Piece ${i + 1}:\n\n`);
+const grid = [];
+let j = 0;
+
+for (let i = 0; (i < 2022); i++) {
+  // verbosePrint(`Piece ${i + 1}:\n\n`);
   const piece = pieces[i % pieces.length];
   let y = grid.length + 3 + piece.length - 1;
   // verbosePrint(`${grid.length} 3 ${piece.length} ${y}`);
@@ -49,13 +54,14 @@ const { grid } = iterate(2022).reduce(({ grid, j, offset }, i) => {
     let ny = y - 1;
     if (intersects(grid, piece, x, ny)) {
       // verbosePrint(`placing at ${x} ${y}`);
-      return { ...simplify({ grid: placePiece(grid, piece, x, y), offset }), j };
+      placePiece(grid, piece, x, y);
+      break;
     }
     y = ny;
     // verbosePrint(`moving down to ${y}`);
     // verbosePrint(render(placePiece(grid, piece, x, y)));
   }
-}, { grid: [], j: 0, offset: 0 });
+}
 
 print(render(grid));
 console.log(grid.length);
@@ -87,9 +93,8 @@ function intersects(grid, piece, x, y) {
   }
 }
 
+// Mutates grid
 function placePiece(grid, piece, x, y) {
-  // Lazy man's immutability
-  grid = clone(grid);
   for (let cx = x; (cx < (x + piece[0].length)); cx++) {
     for (let py = 0; (py < piece.length); py++) {
       const px = cx - x;
@@ -115,26 +120,4 @@ function set(grid, x, y) {
     grid.push([]);
   }
   grid[y][x] = '#';
-}
-
-function simplify({ grid, offset }) {
-  changed = false;
-  do {
-    for (let y = 0; (y < grid.length); y++) {
-      if (get(0, y) === '#') {
-        const bottom = walk(0, y);
-        if (bottom !== false) {
-          offset += bottom;
-          grid = grid.slice(bottom);
-          changed = true;
-          break;
-        }
-      }
-    }
-  } while (changed);
-  return { grid, offset };
-}
-
-function walk(x, y) {
-  
 }
